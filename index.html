@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kurt</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --white: #ffffff;
+    --black: #000000;
+    --link: #0000ee;
+    --link-visited: #551a8b;
+    --gray: gray;
+    --border: #e5e5e5;
+    --serif: "Times New Roman", Times, serif;
+    --sans: Arial, Helvetica, sans-serif;
+  }
+  html { font-size: 16px; }
+  body { background: var(--white); color: var(--black); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+
+  /* header */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .site-name { font-family: var(--serif); font-style: italic; font-size: 1.6rem; font-weight: normal; text-decoration: none; color: var(--black); }
+  nav { display: flex; gap: 24px; align-items: center; font-size: 0.9rem; }
+  nav a { color: var(--link); text-decoration: underline; }
+  nav a:visited { color: var(--link-visited); }
+  nav a:hover { color: #0000cc; }
+
+  /* grid */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+
+  /* card */
+  .painting { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); cursor: pointer; }
+  .painting:nth-child(3n) { border-right: none; }
+  @media (max-width: 860px) { .painting:nth-child(3n) { border-right: 1px solid var(--border); } .painting:nth-child(2n) { border-right: none; } }
+  @media (max-width: 500px) { .painting { border-right: none; } }
+
+  .painting-img { width: 100%; aspect-ratio: 4/5; background: #f0f0f0; overflow: hidden; position: relative; display: block; }
+  .painting-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s; }
+  .painting:hover .painting-img img { opacity: 0.9; }
+  .painting-img .ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 11px; font-family: var(--sans); }
+
+  .painting-meta { padding: 8px 10px 14px; }
+  .painting-artist { font-size: 0.82rem; color: var(--link); text-decoration: underline; display: block; margin-bottom: 1px; }
+  .painting-title { font-family: var(--serif); font-style: italic; font-size: 0.875rem; font-weight: normal; color: var(--black); display: inline; }
+  .painting-year { font-size: 0.875rem; color: var(--black); display: inline; }
+  .painting-materials { font-size: 0.82rem; color: var(--gray); display: block; margin-top: 1px; }
+
+  /* lightbox */
+  .lb { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(255,255,255,0.97); overflow-y: auto; }
+  .lb.open { display: block; }
+  .lb-wrap { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 60px 20px; }
+  .lb-inner { width: 100%; max-width: 860px; display: grid; grid-template-columns: 1fr 240px; gap: 40px; align-items: start; }
+  @media (max-width: 640px) { .lb-inner { grid-template-columns: 1fr; gap: 16px; } .lb-wrap { padding: 52px 16px 48px; } }
+  .lb-img { width: 100%; display: block; }
+  .lb-side { padding-top: 2px; }
+  .lb-artist { font-size: 0.85rem; color: var(--link); text-decoration: underline; display: block; margin-bottom: 4px; }
+  .lb-title { font-family: var(--serif); font-style: italic; font-size: 1rem; font-weight: normal; color: var(--black); display: inline; }
+  .lb-year { font-size: 1rem; color: var(--black); display: inline; }
+  .lb-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.82rem; margin-top: 12px; }
+  .lb-row:last-child { border-bottom: 1px solid var(--border); }
+  .lb-label { color: var(--gray); }
+  .lb-val { color: var(--black); text-align: right; }
+  .lb-close { position: fixed; top: 14px; right: 18px; background: none; border: none; cursor: pointer; font-family: var(--sans); font-size: 0.82rem; color: var(--gray); text-decoration: underline; z-index: 210; padding: 4px; }
+  .lb-close:hover { color: var(--black); }
+
+  /* footer */
+  footer { border-top: 1px solid var(--border); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--gray); }
+  footer a, .as-link { color: var(--link); text-decoration: underline; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; }
+  footer a:visited, .as-link:visited { color: var(--link-visited); }
+  .as-link svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="site-name" href="/">kurt</a>
+  <nav>
+    <a href="#paintings">work</a>
+    <a href="https://www.artstation.com/kurt1s" target="_blank" rel="noopener">artstation</a>
+  </nav>
+</header>
+
+<!--
+  ═══════════════════════════════════════════════════════
+  HOW TO ADD A PAINTING
+  ═══════════════════════════════════════════════════════
+
+  1. Put your image file in the same folder as index.html
+
+  2. In the <div class="painting-img"> block, replace the
+     placeholder div with:
+       <img src="yourfile.jpg" alt="Title of painting">
+
+  3. Update the four data- attributes on the outer .painting div:
+       data-title="..."
+       data-materials="..."
+       data-size="..."
+       data-year="..."
+
+  4. Update the matching text in .painting-meta
+
+  5. Copy the whole block to add more paintings.
+  ═══════════════════════════════════════════════════════
+-->
+
+<div class="grid" id="paintings">
+
+  <!-- Painting 1 -->
+  <div class="painting"
+    data-title="Untitled No. 1"
+    data-materials="Oil on linen"
+    data-size="60 × 80 cm"
+    data-year="2024"
+    onclick="openLb(this)">
+    <div class="painting-img">
+      <!-- Replace with: <img src="painting1.jpg" alt="Untitled No. 1"> -->
+      <div class="ph">add image</div>
+    </div>
+    <div class="painting-meta">
+      <span class="painting-artist">kurt</span>
+      <span class="painting-title">Untitled No. 1</span><span class="painting-year">, 2024</span>
+      <span class="painting-materials">Oil on linen · 60 × 80 cm</span>
+    </div>
+  </div>
+
+  <!-- Painting 2 -->
+  <div class="painting"
+    data-title="Untitled No. 2"
+    data-materials="Oil on linen"
+    data-size="50 × 70 cm"
+    data-year="2024"
+    onclick="openLb(this)">
+    <div class="painting-img">
+      <div class="ph">add image</div>
+    </div>
+    <div class="painting-meta">
+      <span class="painting-artist">kurt</span>
+      <span class="painting-title">Untitled No. 2</span><span class="painting-year">, 2024</span>
+      <span class="painting-materials">Oil on linen · 50 × 70 cm</span>
+    </div>
+  </div>
+
+  <!-- Painting 3 -->
+  <div class="painting"
+    data-title="Untitled No. 3"
+    data-materials="Acrylic on canvas"
+    data-size="40 × 50 cm"
+    data-year="2023"
+    onclick="openLb(this)">
+    <div class="painting-img">
+      <div class="ph">add image</div>
+    </div>
+    <div class="painting-meta">
+      <span class="painting-artist">kurt</span>
+      <span class="painting-title">Untitled No. 3</span><span class="painting-year">, 2023</span>
+      <span class="painting-materials">Acrylic on canvas · 40 × 50 cm</span>
+    </div>
+  </div>
+
+  <!-- Add more paintings here -->
+
+</div>
+
+<footer>
+  <span style="font-family:'Times New Roman',Times,serif; font-style:italic;">kurt</span>
+  <a class="as-link" href="https://www.artstation.com/kurt1s" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M0 17.723l2.027 3.505h.001a2.424 2.424 0 0 0 2.164 1.333h13.457l-2.792-4.838H0zm24 .025c0-.484-.143-.935-.388-1.314L15.728 2.728a2.424 2.424 0 0 0-2.142-1.289H9.419L21.598 22.54l1.92-3.325c.378-.637.482-.919.482-1.467zm-11.129-3.462L7.428 4.858l-5.444 9.428h10.887z"/></svg>
+    artstation.com/kurt1s
+  </a>
+  <span>kurt.ooo</span>
+</footer>
+
+<!-- Lightbox -->
+<div class="lb" id="lb">
+  <button class="lb-close" onclick="closeLb()">close</button>
+  <div class="lb-wrap" onclick="closeLbOutside(event)">
+    <div class="lb-inner">
+      <img class="lb-img" id="lb-img" src="" alt="">
+      <div class="lb-side">
+        <span class="lb-artist">kurt</span>
+        <span class="lb-title" id="lb-title"></span><span class="lb-year" id="lb-year"></span>
+        <div class="lb-row"><span class="lb-label">Materials</span><span class="lb-val" id="lb-mat"></span></div>
+        <div class="lb-row"><span class="lb-label">Size</span><span class="lb-val" id="lb-size"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openLb(card) {
+    var img = card.querySelector('img');
+    if (!img) return;
+    document.getElementById('lb-img').src = img.src;
+    document.getElementById('lb-img').alt = card.dataset.title;
+    document.getElementById('lb-title').textContent = card.dataset.title;
+    document.getElementById('lb-year').textContent = ', ' + card.dataset.year;
+    document.getElementById('lb-mat').textContent = card.dataset.materials;
+    document.getElementById('lb-size').textContent = card.dataset.size;
+    document.getElementById('lb').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLb() {
+    document.getElementById('lb').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function closeLbOutside(e) {
+    if (e.target.classList.contains('lb-wrap')) closeLb();
+  }
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLb(); });
+</script>
+
+</body>
+</html>
