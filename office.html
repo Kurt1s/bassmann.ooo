@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>office — bassmann.ooo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --white: #ffffff;
+      --black: #000000;
+      --link: #0000ee;
+      --serif: "Times New Roman", Times, serif;
+      --sans: Arial, Helvetica, sans-serif;
+    }
+    html, body { height: 100%; overflow: hidden; background: #0a0a0a; }
+
+    #viewer-root { width: 100vw; height: 100vh; }
+
+    /* ── top bar ── */
+    .ui-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      pointer-events: none;
+    }
+    .ui-bar a, .ui-bar button {
+      pointer-events: all;
+      font-family: var(--sans); font-size: 0.82rem;
+      background: none; border: none; cursor: pointer; padding: 4px 0;
+      color: rgba(255,255,255,0.8); text-decoration: underline;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    }
+    .ui-bar a:hover, .ui-bar button:hover { color: #fff; }
+    .site-name {
+      font-family: var(--serif); font-style: italic; font-size: 1.1rem;
+      text-decoration: none; color: rgba(255,255,255,0.75);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    }
+
+    /* ── controls hint ── */
+    .hint {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      font-family: var(--sans); font-size: 0.72rem;
+      color: rgba(255,255,255,0.38); text-align: center;
+      pointer-events: none; text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+      white-space: nowrap;
+    }
+
+    /* ── overlay (loading / error / no-file) ── */
+    #overlay {
+      position: fixed; inset: 0; z-index: 40;
+      background: #0a0a0a;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; padding: 32px;
+    }
+    #overlay.hidden { display: none; }
+    #overlay-title {
+      font-family: var(--sans); font-size: 0.9rem;
+      color: rgba(255,255,255,0.7);
+    }
+    #overlay-sub {
+      font-family: var(--sans); font-size: 0.75rem;
+      color: rgba(255,255,255,0.35); text-align: center;
+      max-width: 340px; line-height: 1.6;
+    }
+    #progress-bar-wrap {
+      width: 180px; height: 2px;
+      background: rgba(255,255,255,0.1); border-radius: 1px; overflow: hidden;
+    }
+    #progress-bar {
+      height: 100%; width: 0%; background: rgba(255,255,255,0.5);
+      transition: width 0.2s ease; border-radius: 1px;
+    }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid rgba(255,255,255,0.12);
+      border-top-color: rgba(255,255,255,0.55);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="viewer-root"></div>
+
+<div class="ui-bar">
+  <a href="/">← back</a>
+  <a href="/" class="site-name">kurt</a>
+</div>
+
+<div class="hint">
+  drag to orbit &nbsp;·&nbsp; scroll / pinch to zoom &nbsp;·&nbsp; W A S D to move &nbsp;·&nbsp; right-drag to pan
+</div>
+
+<div id="overlay">
+  <div class="spinner" id="spinner"></div>
+  <span id="overlay-title">loading…</span>
+  <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+  <span id="overlay-sub"></span>
+</div>
+
+<script type="module">
+  // ─────────────────────────────────────────────────────────────────
+  //  CONFIGURATION — update SPLAT_FILE if you rename your capture
+  //  Supported formats: .splat  .ksplat  .ply  .spz
+  // ─────────────────────────────────────────────────────────────────
+  const SPLAT_FILE = 'Manhattan.spz';
+
+  // Use latest published version (no pin avoids 404 on non-existent versions)
+  const CDN = 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d/build/gaussian-splats-3d.module.min.js';
+
+  const overlay      = document.getElementById('overlay');
+  const spinner      = document.getElementById('spinner');
+  const titleEl      = document.getElementById('overlay-title');
+  const subEl        = document.getElementById('overlay-sub');
+  const progressBar  = document.getElementById('progress-bar');
+  const progressWrap = document.getElementById('progress-bar-wrap');
+
+  function showError(msg, detail = '') {
+    spinner.style.display = 'none';
+    progressWrap.style.display = 'none';
+    titleEl.textContent = msg;
+    titleEl.style.color = 'rgba(255,120,100,0.85)';
+    subEl.textContent = detail;
+    console.error('[office]', msg, detail);
+  }
+
+  // Wrap any promise with a hard timeout so we never hang silently
+  function withTimeout(promise, ms, label) {
+    const t = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`timed out after ${ms / 1000}s: ${label}`)), ms)
+    );
+    return Promise.race([promise, t]);
+  }
+
+  // HEAD check with timeout
+  async function remoteExists(url) {
+    try {
+      const r = await withTimeout(fetch(url, { method: 'HEAD' }), 8000, 'HEAD ' + url);
+      return r.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  const fileOk = await remoteExists(SPLAT_FILE);
+  if (!fileOk) {
+    spinner.style.display = 'none';
+    progressWrap.style.display = 'none';
+    titleEl.textContent = 'splat file not found';
+    subEl.textContent = `Could not reach "${SPLAT_FILE}". Make sure it's deployed alongside this page.`;
+  } else {
+    titleEl.textContent = 'loading viewer…';
+
+    let GaussianSplats3D;
+    try {
+      GaussianSplats3D = await withTimeout(import(CDN), 20000, 'CDN import');
+    } catch (err) {
+      showError('could not load viewer library', err.message);
+      throw err;
+    }
+
+    if (!GaussianSplats3D?.Viewer) {
+      showError('viewer library loaded but Viewer class not found', 'Check browser console for details.');
+      throw new Error('No Viewer export');
+    }
+
+    titleEl.textContent = 'loading scene…';
+
+    try {
+      const viewer = new GaussianSplats3D.Viewer({
+        rootElement: document.getElementById('viewer-root'),
+        selfDrivenMode: true,
+        useBuiltInControls: true,
+        gpuAcceleratedSort: true,
+        sharedMemoryForWorkers: false,
+      });
+
+      // Progress is emitted as a DOM event on the viewer's renderer
+      viewer.addEventListener('progress', (e) => {
+        const p = Math.round((e.detail?.progress ?? 0) * 100);
+        titleEl.textContent = `loading… ${p}%`;
+        progressBar.style.width = p + '%';
+      });
+
+      await withTimeout(
+        viewer.addSplatScene(SPLAT_FILE, { progressiveLoad: true }),
+        120000,
+        'addSplatScene'
+      );
+
+      overlay.classList.add('hidden');
+      viewer.start();
+    } catch (err) {
+      showError('error loading scene', err.message);
+      console.error('[office] scene error:', err);
+    }
+  }
+</script>
+
+</body>
+</html>
