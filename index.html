@@ -156,19 +156,22 @@
       var pulse = 1 + Math.sin(t * p.freq * 1.5 + p.phase) * 0.12;
       var size = p.size * proj.scale * pulse * (W / 900);
 
-      var alpha = Math.max(0.25, Math.min(1, proj.scale));
+      var alpha = Math.max(0.55, Math.min(1, proj.scale));
       var glow = 0;
       if (p.special) {
-        // sharp lighthouse-style flash: long dim stretch, brief bright spike
-        var envelope = Math.pow(Math.max(0, Math.sin(t * 0.9 + p.phase)), 8);
-        alpha = 0.15 + 0.85 * envelope;
-        glow = 0.35 + 0.65 * envelope;
+        // mostly bright, with only brief gentle dips instead of long dim stretches
+        var raw = 0.5 + 0.5 * Math.sin(t * 0.9 + p.phase);
+        var envelope = Math.pow(raw, 0.35);
+        alpha = 0.55 + 0.45 * envelope;
+        glow = 0.6 + 0.4 * envelope;
       }
 
       drawList.push({ idx: i, x: proj.x, y: proj.y, size: size, alpha: alpha, glow: glow, z: r2.z, special: p.special });
     }
 
-    drawList.sort(function (a, b) { return a.z - b.z; });
+    // painter's algorithm: draw farthest (largest z) first so nearer spheres
+    // are drawn on top and properly occlude the ones behind them
+    drawList.sort(function (a, b) { return b.z - a.z; });
 
     // hit-test special stars against current mouse position
     hoveredIdx = -1;
@@ -190,9 +193,22 @@
       var d = drawList[j];
 
       if (d.special) {
-        ctx.shadowColor = 'rgba(60,220,100,' + d.glow + ')';
-        ctx.shadowBlur = 25 * d.glow * DPR;
-        ctx.fillStyle = 'rgba(70,225,110,' + d.alpha + ')';
+        var r = Math.max(0.5, d.size / 2);
+        var haloR = r * (3 + 2.5 * d.glow);
+
+        // real glow: radial gradient halo, not just canvas shadowBlur
+        var gradient = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, haloR);
+        gradient.addColorStop(0, 'rgba(90,255,140,' + (0.55 * d.glow) + ')');
+        gradient.addColorStop(0.4, 'rgba(60,220,100,' + (0.28 * d.glow) + ')');
+        gradient.addColorStop(1, 'rgba(60,220,100,0)');
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, haloR, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.shadowColor = 'rgba(90,255,140,' + d.glow + ')';
+        ctx.shadowBlur = 20 * d.glow * DPR;
+        ctx.fillStyle = 'rgba(120,255,160,' + d.alpha + ')';
       } else {
         ctx.shadowBlur = 0;
         ctx.fillStyle = 'rgba(255,255,255,' + d.alpha + ')';
