@@ -88,16 +88,11 @@
   }
 
   /* phones: no keyboard for Tab/Enter and no real mouse-drag, so swap the
-     desktop hints for a touch joystick (< prev, o go, > next) and stack
-     the footer above it instead of over top of the removed hint texts */
+     desktop hints (and footer label) for just the touch joystick
+     (< prev, o go, > next) */
   @media (max-width: 600px) {
-    .drag-hint, .tab-hint {
+    .drag-hint, .tab-hint, footer {
       display: none;
-    }
-    footer {
-      bottom: 84px;
-      padding: 6px 12px;
-      font-size: clamp(0.9rem, 4.4vw, 1.1rem);
     }
     .joystick {
       display: flex;
