@@ -18,7 +18,7 @@
     padding: 16px;
     font-family: "Courier New", Courier, monospace;
     color: #fff;
-    font-size: 1.15rem;
+    font-size: clamp(0.85rem, 3.2vw, 1.15rem);
     z-index: 1;
   }
   footer {
@@ -29,7 +29,7 @@
     padding: 16px;
     font-family: "Courier New", Courier, monospace;
     color: #00ff00;
-    font-size: 0.95rem;
+    font-size: clamp(0.7rem, 2.6vw, 0.95rem);
     text-align: center;
     z-index: 1;
     pointer-events: none;
@@ -40,7 +40,7 @@
     right: 16px;
     font-family: "Courier New", Courier, monospace;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 0.95rem;
+    font-size: clamp(0.7rem, 2.6vw, 0.95rem);
     z-index: 1;
     pointer-events: none;
   }
@@ -50,9 +50,34 @@
     right: 16px;
     font-family: "Courier New", Courier, monospace;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 0.95rem;
+    font-size: clamp(0.7rem, 2.6vw, 0.95rem);
     z-index: 1;
     pointer-events: none;
+  }
+
+  /* phones: the right-aligned hints and centered footer collide when
+     stacked at fixed pixel offsets, so stack all three bottom texts in a
+     single centered column instead */
+  @media (max-width: 600px) {
+    footer {
+      bottom: 44px;
+      padding: 4px 12px;
+      font-size: clamp(0.62rem, 3vw, 0.8rem);
+    }
+    .drag-hint {
+      left: 0;
+      right: 0;
+      bottom: 24px;
+      text-align: center;
+      font-size: clamp(0.6rem, 2.8vw, 0.75rem);
+    }
+    .tab-hint {
+      left: 0;
+      right: 0;
+      bottom: 6px;
+      text-align: center;
+      font-size: clamp(0.6rem, 2.8vw, 0.75rem);
+    }
   }
 </style>
 </head>
