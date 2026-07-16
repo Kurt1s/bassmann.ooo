@@ -29,10 +29,11 @@
     padding: 16px;
     font-family: "Courier New", Courier, monospace;
     color: #00ff00;
-    font-size: clamp(0.7rem, 2.6vw, 0.95rem);
+    font-size: clamp(1rem, 3.6vw, 1.3rem);
     text-align: center;
     z-index: 1;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: pointer;
   }
   .tab-hint {
     position: fixed;
@@ -55,37 +56,65 @@
     pointer-events: none;
   }
 
-  /* phones: the right-aligned hints and centered footer collide when
-     stacked at fixed pixel offsets, so stack all three bottom texts in a
-     single centered column instead */
+  .joystick {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+  }
+  .joy-btn {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1.3rem;
+    line-height: 1;
+    color: #00ff00;
+    background: rgba(0, 255, 0, 0.08);
+    border: 1px solid rgba(0, 255, 0, 0.45);
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .joy-btn:active {
+    background: rgba(0, 255, 0, 0.25);
+  }
+
+  /* phones: no keyboard for Tab/Enter and no real mouse-drag, so swap the
+     desktop hints for a touch joystick (< prev, o go, > next) and stack
+     the footer above it instead of over top of the removed hint texts */
   @media (max-width: 600px) {
+    .drag-hint, .tab-hint {
+      display: none;
+    }
     footer {
-      bottom: 44px;
-      padding: 4px 12px;
-      font-size: clamp(0.62rem, 3vw, 0.8rem);
+      bottom: 84px;
+      padding: 6px 12px;
+      font-size: clamp(0.9rem, 4.4vw, 1.1rem);
     }
-    .drag-hint {
-      left: 0;
-      right: 0;
-      bottom: 24px;
-      text-align: center;
-      font-size: clamp(0.6rem, 2.8vw, 0.75rem);
-    }
-    .tab-hint {
-      left: 0;
-      right: 0;
-      bottom: 6px;
-      text-align: center;
-      font-size: clamp(0.6rem, 2.8vw, 0.75rem);
+    .joystick {
+      display: flex;
     }
   }
 </style>
 </head>
 <body>
 <header>bassmann.ooo</header>
-<footer id="target-footer">target: about me</footer>
+<footer id="target-footer">go to: about me</footer>
 <div class="drag-hint">click + drag to rotate</div>
 <div class="tab-hint">use [tab] to cycle orblinks</div>
+<div class="joystick">
+  <button class="joy-btn" id="joy-prev" aria-label="previous target" type="button">&lt;</button>
+  <button class="joy-btn" id="joy-go" aria-label="go" type="button">o</button>
+  <button class="joy-btn" id="joy-next" aria-label="next target" type="button">&gt;</button>
+</div>
 <canvas id="stars"></canvas>
 <script>
 (function () {
@@ -258,17 +287,36 @@
   var selectedIdx = specialIdx[0];
   var ring = { x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, initialized: false };
 
+  function cycleTarget(delta) {
+    selectedOrder = (selectedOrder + delta + specialIdx.length) % specialIdx.length;
+    selectedIdx = specialIdx[selectedOrder];
+    targetFooter.textContent = 'go to: ' + footerLabels[selectedOrder];
+  }
+
+  function goToTarget() {
+    var sp = points[selectedIdx];
+    if (sp && sp.special) window.location.href = sp.special.url;
+  }
+
   window.addEventListener('keydown', function (e) {
     if (e.key === 'Tab') {
       e.preventDefault();
-      selectedOrder = (selectedOrder + 1) % specialIdx.length;
-      selectedIdx = specialIdx[selectedOrder];
-      targetFooter.textContent = 'target: ' + footerLabels[selectedOrder];
+      cycleTarget(1);
     } else if (e.key === 'Enter') {
-      var sp = points[selectedIdx];
-      if (sp && sp.special) window.location.href = sp.special.url;
+      goToTarget();
     }
   });
+
+  // the orbiting stars are small, fast-moving touch targets, so the footer
+  // itself is a bigger, reliable way to activate whatever is currently
+  // targeted (mirrors what Enter does on desktop)
+  targetFooter.addEventListener('click', goToTarget);
+
+  // mobile joystick: no keyboard means no Tab/Enter, so give touch users an
+  // equivalent < prev / o go / > next control
+  document.getElementById('joy-prev').addEventListener('click', function () { cycleTarget(-1); });
+  document.getElementById('joy-next').addEventListener('click', function () { cycleTarget(1); });
+  document.getElementById('joy-go').addEventListener('click', goToTarget);
 
   var angleY = 0;
   var angleX = 0.3;
@@ -530,7 +578,7 @@
 
       ctx.beginPath();
       ctx.arc(ring.x, ring.y, ringR, 0, Math.PI * 2);
-      ctx.strokeStyle = '#5ad1ff';
+      ctx.strokeStyle = '#00ff00';
       ctx.lineWidth = 2 * DPR;
       ctx.setLineDash([segment / 2, segment / 2]);
       ctx.stroke();
@@ -539,7 +587,7 @@
       if (hoveredIdx !== selectedIdx) {
         var selPt = points[selectedIdx];
         ctx.font = (13 * DPR) + 'px Arial, sans-serif';
-        ctx.fillStyle = '#5ad1ff';
+        ctx.fillStyle = '#00ff00';
         ctx.textAlign = 'center';
         ctx.fillText(selPt.special.label, ring.x, ring.y - ring.r - 6 * DPR);
       }
