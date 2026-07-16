@@ -22,7 +22,7 @@
 </style>
 </head>
 <body>
-<header>kurtis bassmann's website</header>
+<header>bassmann.ooo</header>
 <canvas id="stars"></canvas>
 <script>
 (function () {
@@ -97,8 +97,25 @@
     if (hoveredIdx !== -1) window.location.href = points[hoveredIdx].special.url;
   });
 
+  // keyboard nav: Tab cycles through special stars (default = 'about'), Enter activates
+  var selectedOrder = 0;
+  var selectedIdx = specialIdx[0];
+  var ring = { x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, initialized: false };
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      selectedOrder = (selectedOrder + 1) % specialIdx.length;
+      selectedIdx = specialIdx[selectedOrder];
+    } else if (e.key === 'Enter') {
+      var sp = points[selectedIdx];
+      if (sp && sp.special) window.location.href = sp.special.url;
+    }
+  });
+
   var angleY = 0;
   var angleX = 0.3;
+  var lastT = 0;
 
   function project(px, py, pz) {
     var scale = FOCAL / (FOCAL + pz);
@@ -190,6 +207,29 @@
     }
     canvas.style.cursor = hoveredIdx !== -1 ? 'pointer' : 'default';
 
+    // spring-animate the keyboard-selection ring toward the selected star's live position
+    var dt = Math.min(Math.max(t - lastT, 0), 0.05);
+    lastT = t;
+    var target = null;
+    for (var s = 0; s < drawList.length; s++) {
+      if (drawList[s].idx === selectedIdx) { target = drawList[s]; break; }
+    }
+    if (target) {
+      var targetR = Math.max(0.5, target.size / 2) + 10 * DPR;
+      if (!ring.initialized) {
+        ring.x = target.x; ring.y = target.y; ring.r = targetR;
+        ring.vx = ring.vy = ring.vr = 0;
+        ring.initialized = true;
+      } else {
+        var STIFF = 140, DAMP = 16;
+        var ax = (target.x - ring.x) * STIFF - ring.vx * DAMP;
+        var ay = (target.y - ring.y) * STIFF - ring.vy * DAMP;
+        var ar = (targetR - ring.r) * STIFF - ring.vr * DAMP;
+        ring.vx += ax * dt; ring.vy += ay * dt; ring.vr += ar * dt;
+        ring.x += ring.vx * dt; ring.y += ring.vy * dt; ring.r += ring.vr * dt;
+      }
+    }
+
     for (var j = 0; j < drawList.length; j++) {
       var d = drawList[j];
 
@@ -231,6 +271,25 @@
         ctx.fillStyle = '#2ecc71';
         ctx.textAlign = 'center';
         ctx.fillText(d.special.label, d.x, d.y - d.size / 2 - 16 * DPR);
+      }
+    }
+
+    // keyboard-selection ring: follows the selected star via spring physics
+    if (ring.initialized) {
+      ctx.beginPath();
+      ctx.arc(ring.x, ring.y, Math.max(0.5, ring.r), 0, Math.PI * 2);
+      ctx.strokeStyle = '#5ad1ff';
+      ctx.lineWidth = 2 * DPR;
+      ctx.setLineDash([5 * DPR, 4 * DPR]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (hoveredIdx !== selectedIdx) {
+        var selPt = points[selectedIdx];
+        ctx.font = (13 * DPR) + 'px Arial, sans-serif';
+        ctx.fillStyle = '#5ad1ff';
+        ctx.textAlign = 'center';
+        ctx.fillText(selPt.special.label, ring.x, ring.y - ring.r - 6 * DPR);
       }
     }
 
