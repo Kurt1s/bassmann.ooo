@@ -1,20 +1,33 @@
 (function () {
-  var link = document.querySelector('link[rel="icon"]');
-  if (!link) return;
+  var currentLink = document.querySelector('link[rel="icon"]');
+  if (!currentLink) return;
 
   var canvas = document.createElement('canvas');
   canvas.width = 64;
   canvas.height = 64;
   var ctx = canvas.getContext('2d');
 
-  // same pulse envelope used for the special nav stars on index.html
+  // Chrome/Edge often won't repaint the tab icon just because a <link>'s
+  // href changed — swapping in a brand-new <link> node each frame forces it
+  function setFavicon(href) {
+    var newLink = document.createElement('link');
+    newLink.rel = 'icon';
+    newLink.type = 'image/png';
+    newLink.href = href;
+    document.head.appendChild(newLink);
+    if (currentLink.parentNode) currentLink.parentNode.removeChild(currentLink);
+    currentLink = newLink;
+  }
+
+  // same pulse envelope used for the special nav stars on index.html, with a
+  // wider swing so the blink actually reads at 16x16
   function draw(t) {
     ctx.clearRect(0, 0, 64, 64);
 
     var raw = 0.5 + 0.5 * Math.sin(t * 0.9);
     var envelope = Math.pow(raw, 0.35);
-    var alpha = 0.55 + 0.45 * envelope;
-    var glow = 0.6 + 0.4 * envelope;
+    var alpha = 0.25 + 0.75 * envelope;
+    var glow = 0.3 + 0.7 * envelope;
 
     var gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 26);
     gradient.addColorStop(0, 'rgba(144,255,154,' + (0.9 * glow) + ')');
@@ -36,8 +49,7 @@
     ctx.fillStyle = 'rgba(120,255,160,' + alpha + ')';
     ctx.fill();
 
-    link.type = 'image/png';
-    link.href = canvas.toDataURL('image/png');
+    setFavicon(canvas.toDataURL('image/png'));
   }
 
   // setInterval (not requestAnimationFrame) so the icon keeps blinking in

@@ -18,16 +18,29 @@
     padding: 16px;
     font-family: "Courier New", Courier, monospace;
     color: #fff;
-    font-size: 1rem;
+    font-size: 1.15rem;
     z-index: 1;
+  }
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 16px;
+    font-family: "Courier New", Courier, monospace;
+    color: #00ff00;
+    font-size: 0.95rem;
+    text-align: center;
+    z-index: 1;
+    pointer-events: none;
   }
   .tab-hint {
     position: fixed;
     bottom: 16px;
-    left: 16px;
+    right: 16px;
     font-family: "Courier New", Courier, monospace;
     color: rgba(255, 255, 255, 0.4);
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     z-index: 1;
     pointer-events: none;
   }
@@ -35,6 +48,7 @@
 </head>
 <body>
 <header>bassmann.ooo</header>
+<footer id="target-footer">target: about me</footer>
 <div class="tab-hint">use [tab] to cycle orblinks</div>
 <canvas id="stars"></canvas>
 <script>
@@ -153,6 +167,8 @@
   });
 
   // keyboard nav: Tab cycles through special stars (default = 'about'), Enter activates
+  var footerLabels = ['about me', 'artwork', 'other stuff'];
+  var targetFooter = document.getElementById('target-footer');
   var selectedOrder = 0;
   var selectedIdx = specialIdx[0];
   var ring = { x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, initialized: false };
@@ -162,6 +178,7 @@
       e.preventDefault();
       selectedOrder = (selectedOrder + 1) % specialIdx.length;
       selectedIdx = specialIdx[selectedOrder];
+      targetFooter.textContent = 'target: ' + footerLabels[selectedOrder];
     } else if (e.key === 'Enter') {
       var sp = points[selectedIdx];
       if (sp && sp.special) window.location.href = sp.special.url;
