@@ -6,205 +6,222 @@
 <title>bassmann.ooo</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --white: #ffffff;
-    --black: #000000;
-    --link: #0000ee;
-    --link-visited: #551a8b;
-    --gray: #767676;
-    --border: #e5e5e5;
-    --serif: "Times New Roman", Times, serif;
-    --sans: Arial, Helvetica, sans-serif;
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 16px;
+    font-family: "Courier New", Courier, monospace;
+    color: #fff;
+    font-size: 1rem;
+    z-index: 1;
   }
-  html { font-size: 16px; }
-  body { background: var(--white); color: var(--black); font-family: var(--sans); }
-
-  /* header */
-  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); }
-  .site-name { font-family: var(--serif); font-style: italic; font-size: 1.4rem; font-weight: normal; text-decoration: none; color: var(--black); }
-  nav { display: flex; gap: 20px; align-items: center; font-size: 0.85rem; }
-  nav a { color: var(--link); text-decoration: underline; }
-  nav a:visited { color: var(--link-visited); }
-
-  /* main */
-  main { padding: 16px; }
-
-  /* masonry grid */
-  .masonry { columns: 3 280px; column-gap: 16px; }
-  @media (max-width: 640px) { .masonry { columns: 2 160px; column-gap: 12px; } }
-  @media (max-width: 380px) { .masonry { columns: 1; } }
-
-  /* card */
-  .card { break-inside: avoid; margin-bottom: 16px; cursor: pointer; display: block; }
-  .card img { width: 100%; display: block; }
-  .card:hover img { opacity: 0.9; }
-  .card-meta { padding: 4px 0 8px; }
-  .card-artist { font-size: 0.8rem; color: var(--link); text-decoration: underline; display: block; }
-  .card-title { font-family: var(--serif); font-style: italic; font-size: 0.85rem; color: var(--black); }
-  .card-price { font-size: 0.85rem; color: var(--black); display: block; margin-top: 2px; }
-  .card-ph { width: 100%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #bbb; font-family: var(--sans); }
-
-  /* lightbox */
-  .lb { display: none; position: fixed; inset: 0; z-index: 200; background: var(--white); overflow-y: auto; }
-  .lb.open { display: block; }
-  .lb-back { position: fixed; top: 12px; left: 16px; background: none; border: none; cursor: pointer; font-size: 0.82rem; color: var(--link); text-decoration: underline; z-index: 210; padding: 4px; font-family: var(--sans); }
-  .lb-back:hover { color: var(--link-visited); }
-  .lb-body { display: grid; grid-template-columns: 1fr 260px; gap: 40px; padding: 56px 40px 60px; max-width: 1100px; margin: 0 auto; align-items: start; }
-  @media (max-width: 700px) { .lb-body { grid-template-columns: 1fr; gap: 16px; padding: 52px 16px 40px; } }
-  .lb-img { width: 100%; display: block; }
-  .lb-artist { font-size: 0.82rem; color: var(--link); text-decoration: underline; display: block; margin-bottom: 6px; }
-  .lb-title { font-family: var(--serif); font-style: italic; font-size: 1rem; color: var(--black); }
-  .lb-year { font-size: 1rem; color: var(--black); }
-  .lb-medium { font-size: 0.82rem; color: var(--gray); display: block; margin-top: 4px; }
-  .lb-dims { font-size: 0.82rem; color: var(--gray); display: block; }
-  .lb-price { font-size: 1rem; color: var(--black); display: block; margin: 14px 0 12px; }
-  .lb-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .lb-btn { font-family: var(--sans); font-size: 0.82rem; color: var(--link); text-decoration: underline; background: none; border: none; cursor: pointer; padding: 0; }
-  .lb-btn:hover { color: var(--link-visited); }
-  .lb-btn-primary { font-family: var(--sans); font-size: 0.82rem; border: 1px solid var(--black); padding: 5px 14px; color: var(--black); background: none; cursor: pointer; text-decoration: none; }
-  .lb-btn-primary:hover { background: var(--black); color: var(--white); }
-
-  /* footer */
-  footer { border-top: 1px solid var(--border); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: var(--gray); }
-  footer a { color: var(--link); text-decoration: underline; }
-  footer a:visited { color: var(--link-visited); }
 </style>
 </head>
 <body>
-
-<header>
-  <a class="site-name" href="/">kurt</a>
-  <nav>
-    <a href="#work">work</a>
-    <a href="office.html">office</a>
-    <a href="https://www.artstation.com/kurt1s" target="_blank" rel="noopener">artstation</a>
-  </nav>
-</header>
-
-<main>
-  <div class="masonry" id="work">
-
-    <!--
-      HOW TO ADD A PAINTING
-      ─────────────────────────────────────────────
-      1. Put your image file in this folder
-      2. Copy one of the blocks below
-      3. Replace the data- attributes with your info
-      4. Replace <div class="card-ph" ...> with:
-           <img src="yourfile.jpg" alt="Title">
-      ─────────────────────────────────────────────
-    -->
-
-    <!-- Painting 1 -->
-    <div class="card" onclick="openLb(this)"
-      data-title="Untitled No. 1"
-      data-year="2024"
-      data-medium="Oil on linen"
-      data-dims="60 × 80 cm"
-      data-price="$400">
-      <div class="card-ph" style="height:240px">add image</div>
-      <div class="card-meta">
-        <span class="card-artist">kurt</span>
-        <span class="card-title">Untitled No. 1, 2024</span>
-        <span class="card-price">$400</span>
-      </div>
-    </div>
-
-    <!-- Painting 2 -->
-    <div class="card" onclick="openLb(this)"
-      data-title="Untitled No. 2"
-      data-year="2024"
-      data-medium="Oil on linen"
-      data-dims="50 × 70 cm"
-      data-price="$350">
-      <div class="card-ph" style="height:310px">add image</div>
-      <div class="card-meta">
-        <span class="card-artist">kurt</span>
-        <span class="card-title">Untitled No. 2, 2024</span>
-        <span class="card-price">$350</span>
-      </div>
-    </div>
-
-    <!-- Painting 3 -->
-    <div class="card" onclick="openLb(this)"
-      data-title="Untitled No. 3"
-      data-year="2023"
-      data-medium="Acrylic on canvas"
-      data-dims="40 × 50 cm"
-      data-price="$280">
-      <div class="card-ph" style="height:280px">add image</div>
-      <div class="card-meta">
-        <span class="card-artist">kurt</span>
-        <span class="card-title">Untitled No. 3, 2023</span>
-        <span class="card-price">$280</span>
-      </div>
-    </div>
-
-    <!-- Add more paintings here -->
-
-  </div>
-</main>
-
-<footer>
-  <span style="font-family:'Times New Roman',Times,serif;font-style:italic;">kurt</span>
-  <a href="https://www.artstation.com/kurt1s" target="_blank" rel="noopener">artstation.com/kurt1s</a>
-</footer>
-
-<!-- Lightbox -->
-<div class="lb" id="lb">
-  <button class="lb-back" onclick="closeLb()">← back</button>
-  <div class="lb-body">
-    <img class="lb-img" id="lb-img" src="" alt="">
-    <div class="lb-side">
-      <span class="lb-artist">kurt</span>
-      <span class="lb-title" id="lb-title"></span><span class="lb-year" id="lb-year"></span>
-      <span class="lb-medium" id="lb-medium"></span>
-      <span class="lb-dims" id="lb-dims"></span>
-      <span class="lb-price" id="lb-price"></span>
-      <div class="lb-actions">
-        <button class="lb-btn-primary" onclick="inquire()">inquire</button>
-        <button class="lb-btn" onclick="sendOffer()">send offer</button>
-      </div>
-    </div>
-  </div>
-</div>
-
+<header>kurtis bassmann's website</header>
+<canvas id="stars"></canvas>
 <script>
-  var currentTitle = '';
+(function () {
+  var canvas = document.getElementById('stars');
+  var ctx = canvas.getContext('2d');
+  var W, H, DPR;
 
-  function openLb(card) {
-    var img = card.querySelector('img');
-    if (!img) return;
-    currentTitle = card.dataset.title;
-    document.getElementById('lb-img').src = img.src;
-    document.getElementById('lb-img').alt = card.dataset.title;
-    document.getElementById('lb-title').textContent = card.dataset.title;
-    document.getElementById('lb-year').textContent = ', ' + card.dataset.year;
-    document.getElementById('lb-medium').textContent = card.dataset.medium;
-    document.getElementById('lb-dims').textContent = card.dataset.dims;
-    document.getElementById('lb-price').textContent = card.dataset.price;
-    document.getElementById('lb').classList.add('open');
-    document.body.style.overflow = 'hidden';
-    document.getElementById('lb').scrollTop = 0;
+  function resize() {
+    DPR = window.devicePixelRatio || 1;
+    W = canvas.width = window.innerWidth * DPR;
+    H = canvas.height = window.innerHeight * DPR;
+    canvas.style.width = window.innerWidth + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var COUNT = 300;
+  var FOCAL = 480;
+  var points = [];
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+
+  // galaxy-ish distribution: concentrated toward center, flattened on one axis,
+  // with a sparser halo of outliers
+  for (var i = 0; i < COUNT; i++) {
+    var isHalo = Math.random() < 0.15;
+    var radius = isHalo ? rand(260, 420) : Math.pow(Math.random(), 1.8) * 260;
+    var theta = rand(0, Math.PI * 2);
+    var thickness = isHalo ? rand(-120, 120) : rand(-40, 40) * (1 - radius / 300);
+
+    points.push({
+      x: Math.cos(theta) * radius,
+      y: Math.sin(theta) * radius * 0.55,
+      z: thickness + rand(-20, 20),
+      size: rand(5, 12),
+      phase: rand(0, Math.PI * 2),
+      freq: rand(0.4, 1.1),
+      amp: rand(4, 14),
+      phase2: rand(0, Math.PI * 2),
+      freq2: rand(0.3, 0.9)
+    });
   }
 
-  function closeLb() {
-    document.getElementById('lb').classList.remove('open');
-    document.body.style.overflow = '';
+  // pick 3 random distinct points to become clickable "nav" stars
+  var navDefs = [
+    { label: 'about', url: 'about.html' },
+    { label: 'artwork', url: 'artwork.html' },
+    { label: 'other stuff', url: 'other-stuff.html' }
+  ];
+  var specialIdx = [];
+  while (specialIdx.length < navDefs.length) {
+    var candidate = Math.floor(Math.random() * points.length);
+    if (specialIdx.indexOf(candidate) === -1) specialIdx.push(candidate);
+  }
+  specialIdx.forEach(function (idx, n) {
+    points[idx].special = navDefs[n];
+  });
+
+  var mouseX = -9999, mouseY = -9999;
+  var hoveredIdx = -1;
+  canvas.addEventListener('mousemove', function (e) {
+    var rect = canvas.getBoundingClientRect();
+    mouseX = (e.clientX - rect.left) * DPR;
+    mouseY = (e.clientY - rect.top) * DPR;
+  });
+  canvas.addEventListener('mouseleave', function () {
+    mouseX = -9999;
+    mouseY = -9999;
+  });
+  canvas.addEventListener('click', function () {
+    if (hoveredIdx !== -1) window.location.href = points[hoveredIdx].special.url;
+  });
+
+  var angleY = 0;
+  var angleX = 0.3;
+
+  function project(px, py, pz) {
+    var scale = FOCAL / (FOCAL + pz);
+    return {
+      x: W / 2 + px * scale,
+      y: H / 2 + py * scale,
+      scale: scale
+    };
   }
 
-  function inquire() {
-    var subject = encodeURIComponent('Inquiry: ' + currentTitle);
-    window.location.href = 'mailto:kurt@bassmann.ooo?subject=' + subject;
+  function rotateY(x, y, z, a) {
+    var cosA = Math.cos(a), sinA = Math.sin(a);
+    return {
+      x: x * cosA + z * sinA,
+      y: y,
+      z: -x * sinA + z * cosA
+    };
   }
 
-  function sendOffer() {
-    var subject = encodeURIComponent('Offer for: ' + currentTitle);
-    window.location.href = 'mailto:kurt@bassmann.ooo?subject=' + subject;
+  function rotateX(x, y, z, a) {
+    var cosA = Math.cos(a), sinA = Math.sin(a);
+    return {
+      x: x,
+      y: y * cosA - z * sinA,
+      z: y * sinA + z * cosA
+    };
   }
 
-  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeLb(); });
+  function draw(t) {
+    t *= 0.001;
+    ctx.clearRect(0, 0, W, H);
+    angleY += 0.0018;
+
+    var drawList = [];
+
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i];
+
+      // organic vibration: small per-point wobble in all three axes
+      var jx = Math.sin(t * p.freq + p.phase) * p.amp;
+      var jy = Math.cos(t * p.freq2 + p.phase2) * p.amp * 0.8;
+      var jz = Math.sin(t * p.freq * 0.7 + p.phase2) * p.amp * 0.6;
+
+      var vx = p.x + jx;
+      var vy = p.y + jy;
+      var vz = p.z + jz;
+
+      var r1 = rotateY(vx, vy, vz, angleY);
+      var r2 = rotateX(r1.x, r1.y, r1.z, angleX);
+
+      var scale = DPR * (W / 900);
+      var proj = project(r2.x * scale, r2.y * scale, r2.z * scale);
+
+      // subtle size pulsing to feel alive
+      var pulse = 1 + Math.sin(t * p.freq * 1.5 + p.phase) * 0.12;
+      var size = p.size * proj.scale * pulse * (W / 900);
+
+      var alpha = Math.max(0.25, Math.min(1, proj.scale));
+      var glow = 0;
+      if (p.special) {
+        // sharp lighthouse-style flash: long dim stretch, brief bright spike
+        var envelope = Math.pow(Math.max(0, Math.sin(t * 0.9 + p.phase)), 8);
+        alpha = 0.15 + 0.85 * envelope;
+        glow = 0.35 + 0.65 * envelope;
+      }
+
+      drawList.push({ idx: i, x: proj.x, y: proj.y, size: size, alpha: alpha, glow: glow, z: r2.z, special: p.special });
+    }
+
+    drawList.sort(function (a, b) { return a.z - b.z; });
+
+    // hit-test special stars against current mouse position
+    hoveredIdx = -1;
+    var bestDist = Infinity;
+    for (var k = 0; k < drawList.length; k++) {
+      if (!drawList[k].special) continue;
+      var dx = drawList[k].x - mouseX;
+      var dy = drawList[k].y - mouseY;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var hitRadius = Math.max(18 * DPR, drawList[k].size);
+      if (dist < hitRadius && dist < bestDist) {
+        bestDist = dist;
+        hoveredIdx = drawList[k].idx;
+      }
+    }
+    canvas.style.cursor = hoveredIdx !== -1 ? 'pointer' : 'default';
+
+    for (var j = 0; j < drawList.length; j++) {
+      var d = drawList[j];
+
+      if (d.special) {
+        ctx.shadowColor = 'rgba(60,220,100,' + d.glow + ')';
+        ctx.shadowBlur = 25 * d.glow * DPR;
+        ctx.fillStyle = 'rgba(70,225,110,' + d.alpha + ')';
+      } else {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,' + d.alpha + ')';
+      }
+
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, Math.max(0.5, d.size / 2), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (d.idx === hoveredIdx) {
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size / 2 + 10 * DPR, 0, Math.PI * 2);
+        ctx.strokeStyle = '#2ecc71';
+        ctx.lineWidth = 2 * DPR;
+        ctx.stroke();
+
+        ctx.font = (13 * DPR) + 'px Arial, sans-serif';
+        ctx.fillStyle = '#2ecc71';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.special.label, d.x, d.y - d.size / 2 - 16 * DPR);
+      }
+    }
+
+    requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
 </script>
-
 </body>
 </html>
