@@ -9,7 +9,7 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
-  canvas { display: block; width: 100vw; height: 100vh; }
+  canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
   header {
     position: fixed;
     top: 0;
@@ -194,19 +194,21 @@
   specialCentroid.y /= specialIdx.length;
   specialCentroid.z /= specialIdx.length;
 
+  // Pointer Events unify mouse, touch, and pen so drag/hover work the same
+  // way on a phone screen as with a mouse
   var mouseX = -9999, mouseY = -9999;
   var hoveredIdx = -1;
-  canvas.addEventListener('mousemove', function (e) {
+  canvas.addEventListener('pointermove', function (e) {
     var rect = canvas.getBoundingClientRect();
     mouseX = (e.clientX - rect.left) * DPR;
     mouseY = (e.clientY - rect.top) * DPR;
   });
-  canvas.addEventListener('mouseleave', function () {
+  canvas.addEventListener('pointerleave', function () {
     mouseX = -9999;
     mouseY = -9999;
   });
 
-  // click + drag to manually rotate the scene, with momentum on release
+  // click/tap + drag to manually rotate the scene, with momentum on release
   var isDragging = false;
   var dragMoved = false;
   var lastDragX = 0, lastDragY = 0;
@@ -214,7 +216,7 @@
   var MOMENTUM_FRICTION = 0.95;
   var velY = 0, velX = 0;
 
-  canvas.addEventListener('mousedown', function (e) {
+  canvas.addEventListener('pointerdown', function (e) {
     if (e.button !== 0) return;
     isDragging = true;
     dragMoved = false;
@@ -223,7 +225,7 @@
     lastDragX = e.clientX;
     lastDragY = e.clientY;
   });
-  window.addEventListener('mousemove', function (e) {
+  window.addEventListener('pointermove', function (e) {
     if (!isDragging) return;
     var dx = e.clientX - lastDragX;
     var dy = e.clientY - lastDragY;
@@ -239,7 +241,7 @@
     lastDragX = e.clientX;
     lastDragY = e.clientY;
   });
-  window.addEventListener('mouseup', function (e) {
+  window.addEventListener('pointerup', function (e) {
     if (e.button !== 0) return;
     isDragging = false;
   });
