@@ -19,15 +19,22 @@
     currentLink = newLink;
   }
 
-  // same pulse envelope used for the special nav stars on index.html, with a
-  // wider swing so the blink actually reads at 16x16
+  // same pulse envelope used for the special nav stars on index.html, but
+  // pushed to a full 20%-100% brightness swing plus a small positional
+  // shake so the effect actually reads at 16x16
   function draw(t) {
     ctx.clearRect(0, 0, 64, 64);
 
     var raw = 0.5 + 0.5 * Math.sin(t * 0.9);
     var envelope = Math.pow(raw, 0.35);
-    var alpha = 0.25 + 0.75 * envelope;
-    var glow = 0.3 + 0.7 * envelope;
+    var alpha = 0.2 + 0.8 * envelope;
+    var glow = 0.2 + 0.8 * envelope;
+
+    var shakeX = Math.sin(t * 13.7) * 2.2 + Math.sin(t * 7.3 + 1.4) * 1.1;
+    var shakeY = Math.cos(t * 11.3) * 2.2 + Math.cos(t * 5.9 + 0.7) * 1.1;
+
+    ctx.save();
+    ctx.translate(shakeX, shakeY);
 
     var gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 26);
     gradient.addColorStop(0, 'rgba(144,255,154,' + (0.9 * glow) + ')');
@@ -49,12 +56,15 @@
     ctx.fillStyle = 'rgba(120,255,160,' + alpha + ')';
     ctx.fill();
 
+    ctx.restore();
+
     setFavicon(canvas.toDataURL('image/png'));
   }
 
   // setInterval (not requestAnimationFrame) so the icon keeps blinking in
-  // the tab strip even while this tab isn't the focused one
+  // the tab strip even while this tab isn't the focused one; fast enough
+  // that the shake reads as a vibration rather than discrete jumps
   setInterval(function () {
     draw(performance.now() * 0.001);
-  }, 150);
+  }, 80);
 })();

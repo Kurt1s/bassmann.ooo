@@ -44,11 +44,22 @@
     z-index: 1;
     pointer-events: none;
   }
+  .drag-hint {
+    position: fixed;
+    bottom: 42px;
+    right: 16px;
+    font-family: "Courier New", Courier, monospace;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.95rem;
+    z-index: 1;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
 <header>bassmann.ooo</header>
 <footer id="target-footer">target: about me</footer>
+<div class="drag-hint">click + drag to rotate</div>
 <div class="tab-hint">use [tab] to cycle orblinks</div>
 <canvas id="stars"></canvas>
 <script>
@@ -162,7 +173,47 @@
     mouseX = -9999;
     mouseY = -9999;
   });
+
+  // click + drag to manually rotate the scene, with momentum on release
+  var isDragging = false;
+  var dragMoved = false;
+  var lastDragX = 0, lastDragY = 0;
+  var DRAG_SPEED = 0.005;
+  var MOMENTUM_FRICTION = 0.95;
+  var velY = 0, velX = 0;
+
+  canvas.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    isDragging = true;
+    dragMoved = false;
+    velY = 0;
+    velX = 0;
+    lastDragX = e.clientX;
+    lastDragY = e.clientY;
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!isDragging) return;
+    var dx = e.clientX - lastDragX;
+    var dy = e.clientY - lastDragY;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) dragMoved = true;
+    var stepY = dx * DRAG_SPEED;
+    var stepX = dy * DRAG_SPEED;
+    angleY += stepY;
+    angleX += stepX;
+    // smoothed velocity so a flick's momentum reflects the overall motion,
+    // not just the last jittery sample right before release
+    velY = velY * 0.7 + stepY * 0.3;
+    velX = velX * 0.7 + stepX * 0.3;
+    lastDragX = e.clientX;
+    lastDragY = e.clientY;
+  });
+  window.addEventListener('mouseup', function (e) {
+    if (e.button !== 0) return;
+    isDragging = false;
+  });
+
   canvas.addEventListener('click', function () {
+    if (dragMoved) return;
     if (hoveredIdx !== -1) window.location.href = points[hoveredIdx].special.url;
   });
 
@@ -219,7 +270,18 @@
   function draw(t) {
     t *= 0.001;
     ctx.clearRect(0, 0, W, H);
-    angleY += 0.0018;
+    angleY += 0.0045;
+
+    // inertia: momentum from the last drag keeps spinning the scene and
+    // decays via friction, instead of stopping dead the instant you let go
+    if (!isDragging && (velY !== 0 || velX !== 0)) {
+      angleY += velY;
+      angleX += velX;
+      velY *= MOMENTUM_FRICTION;
+      velX *= MOMENTUM_FRICTION;
+      if (Math.abs(velY) < 0.00005) velY = 0;
+      if (Math.abs(velX) < 0.00005) velX = 0;
+    }
 
     var drawList = [];
 
@@ -256,7 +318,7 @@
       var pulse = 1 + Math.sin(t * p.freq * 1.5 + p.phase) * 0.12;
       var size = p.size * proj.scale * pulse * (W / 900);
 
-      var alpha = Math.max(0.55, Math.min(1, proj.scale));
+      var alpha = Math.max(0.8, Math.min(1, proj.scale));
       var glow = 0;
       if (p.special) {
         // mostly bright, with only brief gentle dips instead of long dim stretches
