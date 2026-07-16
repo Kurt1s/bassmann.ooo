@@ -19,10 +19,21 @@
     font-size: 1rem;
     z-index: 1;
   }
+  .tab-hint {
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    font-family: "Courier New", Courier, monospace;
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+    z-index: 1;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
 <header>bassmann.ooo</header>
+<div class="tab-hint">use [tab] to cycle through orblinks</div>
 <canvas id="stars"></canvas>
 <script>
 (function () {
@@ -276,11 +287,15 @@
 
     // keyboard-selection ring: follows the selected star via spring physics
     if (ring.initialized) {
+      var ringR = Math.max(0.5, ring.r);
+      var DIVISIONS = 32;
+      var segment = (2 * Math.PI * ringR) / DIVISIONS;
+
       ctx.beginPath();
-      ctx.arc(ring.x, ring.y, Math.max(0.5, ring.r), 0, Math.PI * 2);
+      ctx.arc(ring.x, ring.y, ringR, 0, Math.PI * 2);
       ctx.strokeStyle = '#5ad1ff';
       ctx.lineWidth = 2 * DPR;
-      ctx.setLineDash([5 * DPR, 4 * DPR]);
+      ctx.setLineDash([segment / 2, segment / 2]);
       ctx.stroke();
       ctx.setLineDash([]);
 
