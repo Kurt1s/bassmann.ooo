@@ -164,6 +164,7 @@
         var envelope = Math.pow(raw, 0.35);
         alpha = 0.55 + 0.45 * envelope;
         glow = 0.6 + 0.4 * envelope;
+        size *= 2.6;
       }
 
       drawList.push({ idx: i, x: proj.x, y: proj.y, size: size, alpha: alpha, glow: glow, z: r2.z, special: p.special });
