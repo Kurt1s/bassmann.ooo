@@ -83,11 +83,51 @@
       animation: spin 0.75s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    /* ── notice popup ── */
+    #notice {
+      position: fixed; inset: 0; z-index: 60;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; background: rgba(0,0,0,0.55);
+    }
+    #notice.hidden { display: none; }
+    .notice-box {
+      max-width: 360px; padding: 20px 22px;
+      background: rgba(12,12,12,0.92);
+      border: 1px solid rgba(255,255,255,0.18); border-radius: 6px;
+      font-family: var(--sans); font-size: 0.9rem; line-height: 1.6;
+      color: rgba(255,255,255,0.85); text-align: center;
+    }
+    .notice-box button {
+      margin-top: 14px; padding: 4px 18px;
+      font-family: var(--sans); font-size: 0.8rem; cursor: pointer;
+      color: #fff; background: none;
+      border: 1px solid rgba(255,255,255,0.4); border-radius: 3px;
+    }
+    .notice-box button:hover { border-color: #fff; }
   </style>
 </head>
 <body>
 
 <div id="viewer-root"></div>
+
+<div id="notice" role="dialog" aria-modal="true" aria-labelledby="notice-text">
+  <div class="notice-box">
+    <p id="notice-text">Not my actual office, but and office I worked in. My own office coming soon</p>
+    <button type="button" id="notice-ok">ok</button>
+  </div>
+</div>
+<script>
+  (function () {
+    var notice = document.getElementById('notice');
+    var ok = document.getElementById('notice-ok');
+    function close() { notice.classList.add('hidden'); }
+    ok.addEventListener('click', close);
+    // clicking the dimmed backdrop or pressing Escape also dismisses it
+    notice.addEventListener('click', function (e) { if (e.target === notice) close(); });
+    addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    ok.focus();
+  })();
+</script>
 
 <div class="ui-bar">
   <a href="/">← back</a>
