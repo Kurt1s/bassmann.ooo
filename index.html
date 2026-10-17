@@ -56,6 +56,32 @@
     pointer-events: none;
   }
 
+  .orb-sidebar {
+    position: fixed;
+    top: 50%;
+    left: 16px;
+    transform: translateY(-50%);
+    list-style: none;
+    font-family: "Courier New", Courier, monospace;
+    font-size: clamp(0.8rem, 3vw, 1.05rem);
+    line-height: 1.9;
+    z-index: 1;
+  }
+  .orb-sidebar li {
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+  }
+  .orb-sidebar li::before {
+    content: "  ";
+    white-space: pre;
+  }
+  .orb-sidebar li.active {
+    color: #00ff00;
+  }
+  .orb-sidebar li.active::before {
+    content: "> ";
+  }
+
   .joystick {
     display: none;
     position: fixed;
@@ -103,6 +129,7 @@
 <body>
 <header>bassmann.ooo</header>
 <footer id="target-footer">go to: about me</footer>
+<ul class="orb-sidebar" id="orb-sidebar"></ul>
 <div class="drag-hint">click + drag to rotate</div>
 <div class="tab-hint">use [tab] to cycle orblinks</div>
 <div class="joystick">
@@ -283,10 +310,30 @@
   var selectedIdx = specialIdx[0];
   var ring = { x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0, initialized: false };
 
-  function cycleTarget(delta) {
-    selectedOrder = (selectedOrder + delta + specialIdx.length) % specialIdx.length;
+  // sidebar lists every orblink and highlights whichever one is targeted
+  var sidebarItems = navDefs.map(function (def, n) {
+    var li = document.createElement('li');
+    li.textContent = def.label;
+    li.addEventListener('click', function () {
+      selectTarget(n);
+      goToTarget();
+    });
+    document.getElementById('orb-sidebar').appendChild(li);
+    return li;
+  });
+
+  function selectTarget(order) {
+    selectedOrder = order;
     selectedIdx = specialIdx[selectedOrder];
     targetFooter.textContent = 'go to: ' + footerLabels[selectedOrder];
+    sidebarItems.forEach(function (li, n) {
+      li.classList.toggle('active', n === selectedOrder);
+    });
+  }
+  selectTarget(0);
+
+  function cycleTarget(delta) {
+    selectTarget((selectedOrder + delta + specialIdx.length) % specialIdx.length);
   }
 
   function goToTarget() {
