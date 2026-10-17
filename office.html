@@ -183,7 +183,8 @@
         rootElement: document.getElementById('viewer-root'),
         selfDrivenMode: true,
         useBuiltInControls: true,
-        gpuAcceleratedSort: true,
+        // GPU sort leaves the canvas blank in 0.4.7; the CPU worker sort renders fine
+        gpuAcceleratedSort: false,
         sharedMemoryForWorkers: false,
       });
 
