@@ -179,10 +179,11 @@
     });
   }
 
-  // pick 3 random distinct points to become clickable "nav" stars
+  // pick random distinct points to become clickable "nav" stars
   var navDefs = [
     { label: 'about', url: 'about.html' },
     { label: 'artwork', url: 'https://kurt1s.artstation.com/' },
+    { label: 'office', url: 'office.html' },
     { label: 'other stuff', url: 'https://github.com/Kurt1s/' }
   ];
   var specialIdx = [];
@@ -193,7 +194,7 @@
   specialIdx.forEach(function (idx, n) {
     points[idx].special = navDefs[n];
     // chaotic mutual orbit: radius/angle both wobble at unrelated frequencies
-    // so the three stars circle a shared point without ever settling into a
+    // so the nav stars circle a shared point without ever settling into a
     // clean repeating pattern
     points[idx].orbit = {
       radius: rand(30, 55),
@@ -276,7 +277,7 @@
   });
 
   // keyboard nav: Tab cycles through special stars (default = 'about'), Enter activates
-  var footerLabels = ['about me', 'artwork', 'other stuff'];
+  var footerLabels = ['about me', 'artwork', 'office', 'other stuff'];
   var targetFooter = document.getElementById('target-footer');
   var selectedOrder = 0;
   var selectedIdx = specialIdx[0];

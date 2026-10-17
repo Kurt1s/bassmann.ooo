@@ -105,6 +105,10 @@
   <span id="overlay-sub"></span>
 </div>
 
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+
 <script type="module">
   // ─────────────────────────────────────────────────────────────────
   //  CONFIGURATION — update SPLAT_FILE if you rename your capture
@@ -112,8 +116,9 @@
   // ─────────────────────────────────────────────────────────────────
   const SPLAT_FILE = 'Manhattan.spz';
 
-  // Use latest published version (no pin avoids 404 on non-existent versions)
-  const CDN = 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d/build/gaussian-splats-3d.module.min.js';
+  // Pinned: 0.4.7 ships only build/gaussian-splats-3d.module.js (no .min.js),
+  // and it imports the bare specifier 'three', resolved by the import map above
+  const CDN = 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js';
 
   const overlay      = document.getElementById('overlay');
   const spinner      = document.getElementById('spinner');
@@ -182,15 +187,23 @@
         sharedMemoryForWorkers: false,
       });
 
-      // Progress is emitted as a DOM event on the viewer's renderer
-      viewer.addEventListener('progress', (e) => {
-        const p = Math.round((e.detail?.progress ?? 0) * 100);
+      // .spz isn't progressively loadable, so the scene appears only once it's
+      // fully downloaded and decoded; our own overlay stands in for the library's UI
+      // LoaderStatus isn't exported by the library: 0 = downloading, 1 = processing
+      const PROCESSING = 1;
+      const onProgress = (percent, _label, status) => {
+        if (status === PROCESSING) {
+          titleEl.textContent = 'processing…';
+          progressBar.style.width = '100%';
+          return;
+        }
+        const p = Math.round(percent);
         titleEl.textContent = `loading… ${p}%`;
         progressBar.style.width = p + '%';
-      });
+      };
 
       await withTimeout(
-        viewer.addSplatScene(SPLAT_FILE, { progressiveLoad: true }),
+        viewer.addSplatScene(SPLAT_FILE, { showLoadingUI: false, onProgress }),
         120000,
         'addSplatScene'
       );
