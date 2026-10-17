@@ -8,13 +8,99 @@
 <script src="favicon-animate.js" defer></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 100%; height: 100%; background: #000; }
-  body { display: flex; align-items: center; justify-content: center; }
-  body { padding: 16px; }
-  p { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 1.5rem; line-height: 1.5; max-width: 40rem; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+  body { display: flex; align-items: center; justify-content: center; padding: 16px; perspective: 900px; }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; }
+  .plane {
+    position: relative;
+    z-index: 1;
+    max-width: 40rem;
+    transform-style: preserve-3d;
+    animation: tilt 16s ease-in-out infinite;
+  }
+  p { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 1.5rem; line-height: 1.5; }
+
+  /* slow tilt of the text plane, never more than 15 degrees either way */
+  @keyframes tilt {
+    0%   { transform: rotateY(-15deg) rotateX(5deg); }
+    25%  { transform: rotateY(0deg)   rotateX(-15deg); }
+    50%  { transform: rotateY(15deg)  rotateX(5deg); }
+    75%  { transform: rotateY(0deg)   rotateX(15deg); }
+    100% { transform: rotateY(-15deg) rotateX(5deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .plane { animation: none; }
+  }
 </style>
 </head>
 <body>
+<canvas id="orbs"></canvas>
+<div class="plane">
 <p>im using Claude to build a cool website. I work as an automation engineer at PCR Consulting Inc. I enjoy painting, drawing and playing video games in my free time. Last updated 10/16/2026.</p>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById('orbs');
+  const ctx = canvas.getContext('2d');
+  const colors = ['#00ff00', '#00ffff', '#ff00ff', '#ffffff', '#ffaa00'];
+  let w, h, dpr, orbs = [];
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function makeOrb() {
+    const r = 4 + Math.random() * 14;
+    const speed = 0.15 + Math.random() * 0.5;
+    const angle = Math.random() * Math.PI * 2;
+    return {
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      phase: Math.random() * Math.PI * 2,
+    };
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (const o of orbs) {
+      o.x += o.vx;
+      o.y += o.vy;
+      if (o.x < -o.r * 3) o.x = w + o.r * 3;
+      if (o.x > w + o.r * 3) o.x = -o.r * 3;
+      if (o.y < -o.r * 3) o.y = h + o.r * 3;
+      if (o.y > h + o.r * 3) o.y = -o.r * 3;
+
+      const pulse = 0.75 + 0.25 * Math.sin(t / 900 + o.phase);
+      const glow = o.r * 3;
+      const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, glow);
+      g.addColorStop(0, o.color);
+      g.addColorStop(0.3, o.color + '88');
+      g.addColorStop(1, o.color + '00');
+      ctx.globalAlpha = 0.55 * pulse;
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(o.x, o.y, glow, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  const count = Math.round(Math.min(40, Math.max(14, (w * h) / 40000)));
+  for (let i = 0; i < count; i++) orbs.push(makeOrb());
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(draw);
+})();
+</script>
 </body>
 </html>
