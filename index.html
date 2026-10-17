@@ -182,9 +182,9 @@
   // pick random distinct points to become clickable "nav" stars
   var navDefs = [
     { label: 'about', url: 'about.html' },
-    { label: 'artwork', url: 'https://kurt1s.artstation.com/' },
+    { label: 'Artstation', url: 'https://kurt1s.artstation.com/' },
     { label: 'office', url: 'office.html' },
-    { label: 'other stuff', url: 'https://github.com/Kurt1s/' }
+    { label: 'GitHub', url: 'https://github.com/Kurt1s/' }
   ];
   var specialIdx = [];
   while (specialIdx.length < navDefs.length) {
@@ -277,7 +277,7 @@
   });
 
   // keyboard nav: Tab cycles through special stars (default = 'about'), Enter activates
-  var footerLabels = ['about me', 'artwork', 'office', 'other stuff'];
+  var footerLabels = ['about me', 'Artstation', 'office', 'GitHub'];
   var targetFooter = document.getElementById('target-footer');
   var selectedOrder = 0;
   var selectedIdx = specialIdx[0];
