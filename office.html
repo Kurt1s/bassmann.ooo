@@ -15,7 +15,7 @@
       --serif: "Times New Roman", Times, serif;
       --sans: Arial, Helvetica, sans-serif;
     }
-    html, body { height: 100%; overflow: hidden; background: #0a0a0a; }
+    html, body { height: 100%; overflow: hidden; background: #000; }
 
     #viewer-root { width: 100vw; height: 100vh; }
 
@@ -52,7 +52,7 @@
     /* ── overlay (loading / error / no-file) ── */
     #overlay {
       position: fixed; inset: 0; z-index: 40;
-      background: #0a0a0a;
+      background: #000;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 14px; padding: 32px;
@@ -105,6 +105,10 @@
   <span id="overlay-sub"></span>
 </div>
 
+<script type="importmap">
+  { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+</script>
+
 <script type="module">
   // ─────────────────────────────────────────────────────────────────
   //  CONFIGURATION — update SPLAT_FILE if you rename your capture
@@ -112,8 +116,9 @@
   // ─────────────────────────────────────────────────────────────────
   const SPLAT_FILE = 'Manhattan.spz';
 
-  // Use latest published version (no pin avoids 404 on non-existent versions)
-  const CDN = 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d/build/gaussian-splats-3d.module.min.js';
+  // Pinned: 0.4.7 ships only build/gaussian-splats-3d.module.js (no .min.js),
+  // and it imports the bare specifier 'three', resolved by the import map above
+  const CDN = 'https://cdn.jsdelivr.net/npm/@mkkellogg/gaussian-splats-3d@0.4.7/build/gaussian-splats-3d.module.js';
 
   const overlay      = document.getElementById('overlay');
   const spinner      = document.getElementById('spinner');
@@ -149,6 +154,53 @@
     }
   }
 
+  // Splats carry baked-in color, so three.js lights can't reach them. Instead we
+  // patch the splat shader: each splat is dimmed to an ambient level and then
+  // brightened by its distance to a light point that wanders through the room.
+  // It's a few multiplies per splat; the cost is that the viewer now redraws
+  // every frame instead of only when the camera moves.
+  const LIGHT = {
+    ambient: 0.3,
+    color: [1.0, 0.85, 0.65],   // warm
+    intensity: 1.8,
+    radius: 0.9,                // distance at which the light's boost halves
+    center: [0.0, 0.6, 0.5],    // roughly the middle of the capture
+    sweep: [1.4, 0.5, 1.2],     // how far it wanders on each axis
+  };
+
+  function addMovingLight(viewer) {
+    const material = viewer.splatMesh.material;
+    material.uniforms.lightPos = { value: LIGHT.center.slice() };
+    material.uniforms.lightColor = { value: LIGHT.color.map(c => c * LIGHT.intensity) };
+    material.uniforms.lightAmbient = { value: LIGHT.ambient };
+    material.uniforms.lightRadius = { value: LIGHT.radius };
+    material.vertexShader = material.vertexShader
+      .replace('varying vec4 vColor;', `varying vec4 vColor;
+        uniform vec3 lightPos;
+        uniform vec3 lightColor;
+        uniform float lightAmbient;
+        uniform float lightRadius;`)
+      .replace('vColor = uintToRGBAVec(sampledCenterColor.r);', `vColor = uintToRGBAVec(sampledCenterColor.r);
+            vec3 toLight = (splatCenter - lightPos) / lightRadius;
+            vColor.rgb = clamp(vColor.rgb * (lightAmbient + lightColor / (1.0 + dot(toLight, toLight))), 0.0, 1.0);`);
+    material.needsUpdate = true;
+
+    const [cx, cy, cz] = LIGHT.center;
+    const [sx, sy, sz] = LIGHT.sweep;
+    const tick = (ms) => {
+      const t = ms / 1000;
+      // unrelated frequencies so the path never settles into an obvious loop
+      const pos = material.uniforms.lightPos.value;
+      pos[0] = cx + sx * Math.sin(t * 0.31);
+      pos[1] = cy + sy * Math.sin(t * 0.53 + 1.0);
+      pos[2] = cz + sz * Math.cos(t * 0.23);
+      material.uniformsNeedUpdate = true;
+      viewer.forceRenderNextFrame();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
   const fileOk = await remoteExists(SPLAT_FILE);
   if (!fileOk) {
     spinner.style.display = 'none';
@@ -178,23 +230,33 @@
         rootElement: document.getElementById('viewer-root'),
         selfDrivenMode: true,
         useBuiltInControls: true,
-        gpuAcceleratedSort: true,
+        // GPU sort leaves the canvas blank in 0.4.7; the CPU worker sort renders fine
+        gpuAcceleratedSort: false,
         sharedMemoryForWorkers: false,
       });
 
-      // Progress is emitted as a DOM event on the viewer's renderer
-      viewer.addEventListener('progress', (e) => {
-        const p = Math.round((e.detail?.progress ?? 0) * 100);
+      // .spz isn't progressively loadable, so the scene appears only once it's
+      // fully downloaded and decoded; our own overlay stands in for the library's UI
+      // LoaderStatus isn't exported by the library: 0 = downloading, 1 = processing
+      const PROCESSING = 1;
+      const onProgress = (percent, _label, status) => {
+        if (status === PROCESSING) {
+          titleEl.textContent = 'processing…';
+          progressBar.style.width = '100%';
+          return;
+        }
+        const p = Math.round(percent);
         titleEl.textContent = `loading… ${p}%`;
         progressBar.style.width = p + '%';
-      });
+      };
 
       await withTimeout(
-        viewer.addSplatScene(SPLAT_FILE, { progressiveLoad: true }),
+        viewer.addSplatScene(SPLAT_FILE, { showLoadingUI: false, onProgress }),
         120000,
         'addSplatScene'
       );
 
+      addMovingLight(viewer);
       overlay.classList.add('hidden');
       viewer.start();
     } catch (err) {
